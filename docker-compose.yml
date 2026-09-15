@@ -6,7 +6,7 @@ services:
     ports:
       - "514:514/udp"
       - "514:514/tcp"
-      - "8082:8082"
+      - "8333:8333"
       # - "6514:6514/tcp"  # uncomment if TLS_CERT_FILE/TLS_KEY_FILE are set
     volumes:
       - ./logs:/var/log/syslogng
