@@ -15,6 +15,8 @@ jobs:
     # push (handled by build-and-push below) is already a release by itself.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,11 +80,36 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
 
+      - name: Determine image tags
+        id: imgtags
+        run: |
+          # docker/metadata-action derives tags from the ref that triggered
+          # this *workflow run* (e.g. "push to main"), which on the
+          # push-to-main path is never the version tag the release job just
+          # created (tag pushes from within a job don't retrigger the
+          # workflow) - so it alone would only ever produce a "main" tag.
+          # Explicitly add the version + latest tags here instead.
+          image=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          tags="${{ steps.meta.outputs.tags }}"
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            version="${GITHUB_REF#refs/tags/}"
+          else
+            version="${{ needs.release.outputs.tag }}"
+          fi
+          if [ -n "$version" ]; then
+            tags="$(printf '%s\n%s:%s\n%s:latest' "$tags" "$image" "$version" "$image")"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.imgtags.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
