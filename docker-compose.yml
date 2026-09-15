@@ -1,0 +1,18 @@
+services:
+  syslogng-webui:
+    image: ghcr.io/Installation-04/syslogng-webui:latest
+    container_name: syslogng-webui
+    restart: unless-stopped
+    ports:
+      - "514:514/udp"
+      - "514:514/tcp"
+      - "8082:8082"
+    volumes:
+      - ./logs:/var/log/syslogng
+    environment:
+      - TZ=America/Toronto
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
