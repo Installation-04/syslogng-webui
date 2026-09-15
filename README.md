@@ -104,6 +104,14 @@ own — no extra setup required. If you'd rather manage retention from the
 host instead, see the `examples/` folder for a standalone `logrotate` config
 and a total-size-cap script you can run via cron against the mounted volume.
 
+## Releases
+
+Every push to `main` automatically tags the next patch version (`vX.Y.Z`),
+creates a GitHub Release with auto-generated notes, and builds/publishes a
+matching multi-arch image to `ghcr.io/installation-04/syslogng-webui` (plus
+`:latest`). To land a change without cutting a release (e.g. docs-only),
+include `[skip release]` in the commit message.
+
 ## Building locally
 
 ```bash
