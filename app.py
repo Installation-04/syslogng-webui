@@ -29,33 +29,54 @@ PAGE = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <title>syslogng-webui</title>
 <style>
-  :root { color-scheme: dark; }
-  body { margin:0; font-family: ui-monospace, Menlo, Consolas, monospace; background:#111418; color:#d7dde3; }
-  header { padding:10px 16px; background:#181c22; border-bottom:1px solid #2a2f37; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:14px; font-weight:600; margin:0; color:#8ecae6; letter-spacing:.02em; }
-  select, input, button { background:#1e232a; color:#d7dde3; border:1px solid #2a2f37; border-radius:6px; padding:6px 10px; font-family:inherit; font-size:13px; }
+  :root {
+    --bg:#f5f6f8; --bg-alt:#eceef1; --bg-hover:#e4e7eb; --border:#d7dbe0; --text:#1c2127; --text-dim:#6b7480;
+    --accent:#1c7ed6; --accent-dim:#2f6690; --ok:#2f9e44; --warn:#e8590c; --mark-bg:#fff3bf; --mark-fg:#7d5a00;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg:#111418; --bg-alt:#181c22; --bg-hover:#1a1f26; --border:#2a2f37; --text:#d7dde3; --text-dim:#8a93a0;
+    --accent:#8ecae6; --accent-dim:#5fa8d3; --ok:#5fb87a; --warn:#ff8787; --mark-bg:#3a3210; --mark-fg:#ffd166;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#111418; --bg-alt:#181c22; --bg-hover:#1a1f26; --border:#2a2f37; --text:#d7dde3; --text-dim:#8a93a0;
+      --accent:#8ecae6; --accent-dim:#5fa8d3; --ok:#5fb87a; --warn:#ff8787; --mark-bg:#3a3210; --mark-fg:#ffd166;
+      color-scheme: dark;
+    }
+  }
+  body { margin:0; font-family: ui-monospace, Menlo, Consolas, monospace; background:var(--bg); color:var(--text); }
+  header { padding:10px 16px; background:var(--bg-alt); border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:14px; font-weight:600; margin:0; color:var(--accent); letter-spacing:.02em; }
+  select, input, button { background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-family:inherit; font-size:13px; }
   button { cursor:pointer; }
-  button:hover { background:#262c34; }
+  button:hover { background:var(--bg-hover); }
   a.btn { text-decoration:none; display:inline-block; }
   #search, #exclude, #searchQuery { flex:1; min-width:140px; }
-  #linecount { color:#8a93a0; font-size:12px; margin-left:auto; }
+  #linecount { color:var(--text-dim); font-size:12px; margin-left:auto; }
   main { padding:0; }
   #log, #searchResults { white-space:pre-wrap; word-break:break-all; padding:14px 16px; font-size:12.5px; line-height:1.5; }
-  .l:hover { background:#1a1f26; }
-  .l .meta { color:#5fa8d3; }
-  mark { background:#3a3210; color:#ffd166; border-radius:2px; }
-  label { font-size:12px; color:#8a93a0; display:flex; align-items:center; gap:5px; }
-  #status { font-size:12px; color:#5fb87a; }
+  .l:hover { background:var(--bg-hover); }
+  .l .meta { color:var(--accent-dim); }
+  .l .dupcount { color:var(--text-dim); font-size:11px; }
+  mark { background:var(--mark-bg); color:var(--mark-fg); border-radius:2px; }
+  label { font-size:12px; color:var(--text-dim); display:flex; align-items:center; gap:5px; }
+  #status { font-size:12px; color:var(--ok); }
   .row2 { width:100%; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px; }
-  nav.tabs { padding:0 16px; background:#14171c; border-bottom:1px solid #2a2f37; display:flex; gap:4px; }
-  nav.tabs button { background:transparent; border:none; border-radius:0; padding:10px 14px; color:#8a93a0; border-bottom:2px solid transparent; }
-  nav.tabs button.active { color:#8ecae6; border-bottom-color:#8ecae6; }
+  nav.tabs { padding:0 16px; background:var(--bg-alt); border-bottom:1px solid var(--border); display:flex; gap:4px; }
+  nav.tabs button { background:transparent; border:none; border-radius:0; padding:10px 14px; color:var(--text-dim); border-bottom:2px solid transparent; }
+  nav.tabs button.active { color:var(--accent); border-bottom-color:var(--accent); }
   section.panel { display:none; }
   section.panel.active { display:block; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th, td { text-align:left; padding:8px 16px; border-bottom:1px solid #2a2f37; }
-  th { color:#8a93a0; font-weight:600; }
+  th, td { text-align:left; padding:8px 16px; border-bottom:1px solid var(--border); }
+  th { color:var(--text-dim); font-weight:600; }
   #stats { padding:0; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-dead { background:var(--warn); color:#1c1200; }
+  tr.dead td { color:var(--warn); }
+  #themeToggle { font-size:14px; padding:6px 9px; }
 </style>
 </head>
 <body>
@@ -73,6 +94,8 @@ PAGE = r"""<!DOCTYPE html>
   <label><input type="checkbox" id="live"> live tail</label>
   <button id="refresh">Refresh</button>
   <a id="download" class="btn" href="#"><button type="button">Download</button></a>
+  <button id="copyLink" title="copy a permalink to this view">Copy link</button>
+  <button id="themeToggle" title="toggle light/dark theme">🌓</button>
   <span id="status"></span>
   <div class="row2">
     <input id="search" placeholder="include filter...">
@@ -83,6 +106,9 @@ PAGE = r"""<!DOCTYPE html>
       <option value="asc" selected>oldest first</option>
       <option value="desc">newest first</option>
     </select>
+    <select id="presetSelect"><option value="">presets...</option></select>
+    <button id="savePreset" title="save current filters as a preset">Save preset</button>
+    <button id="deletePreset" title="delete selected preset">Delete preset</button>
     <span id="linecount"></span>
   </div>
 </header>
@@ -104,6 +130,12 @@ PAGE = r"""<!DOCTYPE html>
     <div id="searchResults"></div>
   </section>
   <section id="tab-stats" class="panel">
+    <div class="row2" style="padding:10px 16px 0;">
+      <label>consider a host dead after
+        <input id="deadMinutes" type="number" min="1" value="15" style="width:60px;">
+        minutes of silence
+      </label>
+    </div>
     <div id="stats">Loading...</div>
   </section>
 </main>
@@ -122,11 +154,36 @@ const statusEl = document.getElementById('status');
 const autoEl = document.getElementById('auto');
 const liveEl = document.getElementById('live');
 const downloadEl = document.getElementById('download');
+const presetSelect = document.getElementById('presetSelect');
+const deadMinutesEl = document.getElementById('deadMinutes');
 let timer = null;
 let evtSource = null;
 let lastLines = [];
+let hostLastSeen = {}; // host -> unix seconds, populated from /api/stats
 
 const SETTINGS_KEY = 'syslogng-webui-settings';
+const PRESETS_KEY = 'syslogng-webui-presets';
+
+// ---- theme ----
+function currentEffectiveTheme() {
+  const explicit = document.documentElement.getAttribute('data-theme');
+  if (explicit) return explicit;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function applyTheme(theme) {
+  if (theme === 'light' || theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', theme);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const next = currentEffectiveTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  saveSettings();
+});
+
+// ---- settings (filters, sort, theme) ----
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
@@ -137,31 +194,129 @@ function loadSettings() {
     if (s.casesens) caseEl.checked = true;
     if (s.sortOrder) sortEl.value = s.sortOrder;
     if (s.auto === false) autoEl.checked = false;
+    if (s.theme) applyTheme(s.theme);
+    if (s.deadMinutes) deadMinutesEl.value = s.deadMinutes;
   } catch (e) { /* ignore corrupt/missing settings */ }
 }
 function saveSettings() {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       fetchLines: fetchLinesSel.value, search: search.value, exclude: exclude.value,
-      regex: regexEl.checked, casesens: caseEl.checked, sortOrder: sortEl.value, auto: autoEl.checked
+      regex: regexEl.checked, casesens: caseEl.checked, sortOrder: sortEl.value, auto: autoEl.checked,
+      theme: document.documentElement.getAttribute('data-theme') || '', deadMinutes: deadMinutesEl.value
     }));
   } catch (e) { /* storage unavailable (private mode, quota) - non-fatal */ }
 }
 
+// ---- saved filter presets ----
+function loadPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function savePresets(presets) {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); }
+  catch (e) { /* storage unavailable - non-fatal */ }
+}
+function refreshPresetOptions(selected) {
+  const presets = loadPresets();
+  const names = Object.keys(presets).sort();
+  presetSelect.innerHTML = '<option value="">presets...</option>' +
+    names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (selected && presets[selected]) presetSelect.value = selected;
+}
+presetSelect.addEventListener('change', () => {
+  const presets = loadPresets();
+  const p = presets[presetSelect.value];
+  if (!p) return;
+  search.value = p.search || '';
+  exclude.value = p.exclude || '';
+  regexEl.checked = !!p.regex;
+  caseEl.checked = !!p.casesens;
+  sortEl.value = p.sortOrder || 'asc';
+  render();
+  saveSettings();
+  updatePermalink();
+});
+document.getElementById('savePreset').addEventListener('click', () => {
+  const name = window.prompt('Preset name:');
+  if (!name) return;
+  const presets = loadPresets();
+  presets[name] = {
+    search: search.value, exclude: exclude.value,
+    regex: regexEl.checked, casesens: caseEl.checked, sortOrder: sortEl.value
+  };
+  savePresets(presets);
+  refreshPresetOptions(name);
+});
+document.getElementById('deletePreset').addEventListener('click', () => {
+  const name = presetSelect.value;
+  if (!name) return;
+  const presets = loadPresets();
+  delete presets[name];
+  savePresets(presets);
+  refreshPresetOptions();
+});
+
+// ---- permalink ----
+function updatePermalink() {
+  const params = new URLSearchParams();
+  if (hostSel.value) params.set('host', hostSel.value);
+  if (fileSel.value) params.set('file', fileSel.value);
+  if (search.value) params.set('q', search.value);
+  if (exclude.value) params.set('exclude', exclude.value);
+  if (regexEl.checked) params.set('regex', '1');
+  if (caseEl.checked) params.set('case', '1');
+  if (sortEl.value !== 'asc') params.set('sort', sortEl.value);
+  if (fetchLinesSel.value !== '2000') params.set('lines', fetchLinesSel.value);
+  const activeTab = document.querySelector('nav.tabs button.active');
+  if (activeTab && activeTab.dataset.tab !== 'logs') params.set('tab', activeTab.dataset.tab);
+  const qs = params.toString();
+  const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+  history.replaceState(null, '', url);
+}
+document.getElementById('copyLink').addEventListener('click', async () => {
+  updatePermalink();
+  try {
+    await navigator.clipboard.writeText(location.href);
+    statusEl.textContent = 'link copied';
+  } catch (e) {
+    window.prompt('Copy this link:', location.href);
+  }
+});
+function paramsFromUrl() {
+  return new URLSearchParams(location.search);
+}
+
 async function loadHosts() {
+  const previousHost = hostSel.value;
   const r = await fetch('/api/hosts');
   const hosts = await r.json();
-  hostSel.innerHTML = hosts.map(h => `<option value="${h}">${h}</option>`).join('');
+  await refreshHostLastSeen();
+  const deadAfterSec = (parseFloat(deadMinutesEl.value) || 15) * 60;
+  const nowSec = Date.now() / 1000;
+  const decorate = h => {
+    const last = hostLastSeen[h];
+    const dead = last && (nowSec - last) > deadAfterSec;
+    return `<option value="${h}">${dead ? '⚠ ' : ''}${h}</option>`;
+  };
+  hostSel.innerHTML = hosts.map(decorate).join('');
   const searchHostSel = document.getElementById('searchHost');
-  searchHostSel.innerHTML = '<option value="*">All hosts</option>' + hosts.map(h => `<option value="${h}">${h}</option>`).join('');
+  searchHostSel.innerHTML = '<option value="*">All hosts</option>' + hosts.map(decorate).join('');
+  const urlHost = paramsFromUrl().get('host');
+  if (previousHost && hosts.includes(previousHost)) hostSel.value = previousHost;
+  else if (urlHost && hosts.includes(urlHost)) hostSel.value = urlHost;
   if (hosts.length) await loadFiles();
 }
 
 async function loadFiles() {
   const host = hostSel.value;
+  const previousFile = fileSel.value;
   const r = await fetch('/api/files?host=' + encodeURIComponent(host));
   const files = await r.json();
   fileSel.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+  const urlFile = paramsFromUrl().get('file');
+  if (previousFile && files.includes(previousFile)) fileSel.value = previousFile;
+  else if (urlFile && files.includes(urlFile)) fileSel.value = urlFile;
   await loadContent();
 }
 
@@ -175,6 +330,7 @@ function updateDownloadLink() {
 async function loadContent() {
   const host = hostSel.value, file = fileSel.value;
   updateDownloadLink();
+  updatePermalink();
   if (!host || !file) return;
   statusEl.textContent = 'loading...';
   try {
@@ -187,6 +343,15 @@ async function loadContent() {
   } catch (e) {
     statusEl.textContent = 'error loading log';
   }
+}
+
+async function refreshHostLastSeen() {
+  try {
+    const r = await fetch('/api/stats');
+    const rows = await r.json();
+    hostLastSeen = {};
+    rows.forEach(row => { hostLastSeen[row.host] = row.last_seen; });
+  } catch (e) { /* stats unavailable - dead-host badges just won't show */ }
 }
 
 function escapeHtml(s) {
@@ -238,6 +403,7 @@ function render() {
   linecountEl.textContent = filtered.length + ' / ' + lastLines.length + ' lines shown';
   if (order === 'asc') logEl.scrollTop = logEl.scrollHeight;
   else logEl.scrollTop = 0;
+  updatePermalink();
 }
 
 hostSel.addEventListener('change', () => { loadFiles(); setupLive(); });
@@ -251,6 +417,7 @@ sortEl.addEventListener('change', () => { render(); saveSettings(); });
 document.getElementById('refresh').addEventListener('click', loadContent);
 autoEl.addEventListener('change', () => { setupAuto(); saveSettings(); });
 liveEl.addEventListener('change', setupLive);
+deadMinutesEl.addEventListener('change', () => { saveSettings(); loadHosts(); if (document.getElementById('tab-stats').classList.contains('active')) loadStats(); });
 
 function setupAuto() {
   if (timer) clearInterval(timer);
@@ -275,14 +442,14 @@ function setupLive() {
 }
 
 // tabs
+function activateTab(name) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('section.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  if (name === 'stats') loadStats();
+  updatePermalink();
+}
 document.querySelectorAll('nav.tabs button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'stats') loadStats();
-  });
+  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
 });
 
 async function loadStats() {
@@ -291,12 +458,21 @@ async function loadStats() {
   try {
     const r = await fetch('/api/stats');
     const rows = await r.json();
-    if (!rows.length) { statsEl.innerHTML = '<div style="padding:14px 16px;color:#8a93a0">No hosts yet</div>'; return; }
+    hostLastSeen = {};
+    rows.forEach(row => { hostLastSeen[row.host] = row.last_seen; });
+    if (!rows.length) { statsEl.innerHTML = '<div style="padding:14px 16px;color:var(--text-dim)">No hosts yet</div>'; return; }
     const fmtSize = b => b > 1024*1024*1024 ? (b/1024/1024/1024).toFixed(2)+' GB'
       : b > 1024*1024 ? (b/1024/1024).toFixed(1)+' MB' : (b/1024).toFixed(1)+' KB';
     const fmtTime = t => t ? new Date(t*1000).toLocaleString() : '-';
-    statsEl.innerHTML = '<table><thead><tr><th>Host</th><th>Files</th><th>Total size</th><th>Last seen</th></tr></thead><tbody>' +
-      rows.map(r => `<tr><td>${escapeHtml(r.host)}</td><td>${r.files}</td><td>${fmtSize(r.size_bytes)}</td><td>${fmtTime(r.last_seen)}</td></tr>`).join('') +
+    const deadAfterSec = (parseFloat(deadMinutesEl.value) || 15) * 60;
+    const nowSec = Date.now() / 1000;
+    statsEl.innerHTML = '<table><thead><tr><th>Host</th><th>Status</th><th>Files</th><th>Total size</th><th>Last seen</th></tr></thead><tbody>' +
+      rows.map(r => {
+        const dead = r.last_seen && (nowSec - r.last_seen) > deadAfterSec;
+        return `<tr class="${dead ? 'dead' : ''}"><td>${escapeHtml(r.host)}</td>` +
+          `<td>${dead ? '<span class="badge badge-dead">dead</span>' : '<span class="badge" style="background:var(--ok);color:#04240f">alive</span>'}</td>` +
+          `<td>${r.files}</td><td>${fmtSize(r.size_bytes)}</td><td>${fmtTime(r.last_seen)}</td></tr>`;
+      }).join('') +
       '</tbody></table>';
   } catch (e) {
     statsEl.textContent = 'error loading stats';
@@ -318,19 +494,37 @@ async function doSearch() {
     const r = await fetch('/api/search?' + params.toString());
     const data = await r.json();
     if (data.error) { resultsEl.textContent = 'Error: ' + data.error; return; }
-    if (!data.results.length) { resultsEl.innerHTML = '<span style="color:#8a93a0">(no matches)</span>'; return; }
+    if (!data.results.length) { resultsEl.innerHTML = '<span style="color:var(--text-dim)">(no matches)</span>'; return; }
     resultsEl.innerHTML = data.results.map(m =>
       '<div class="l"><span class="meta">[' + escapeHtml(m.host) + '/' + escapeHtml(m.file) + ']</span> ' +
       highlight(m.line, q, isRegex, caseSensitive) + '</div>'
-    ).join('') + (data.truncated ? '<div style="color:#8a93a0;margin-top:8px">(results truncated, refine your search)</div>' : '');
+    ).join('') + (data.truncated ? '<div style="color:var(--text-dim);margin-top:8px">(results truncated, refine your search)</div>' : '');
   } catch (e) {
     resultsEl.textContent = 'error searching';
   }
 }
 
+function applyUrlOverrides() {
+  const p = paramsFromUrl();
+  if (p.has('q')) search.value = p.get('q');
+  if (p.has('exclude')) exclude.value = p.get('exclude');
+  if (p.get('regex') === '1') regexEl.checked = true;
+  if (p.get('case') === '1') caseEl.checked = true;
+  if (p.has('sort')) sortEl.value = p.get('sort');
+  if (p.has('lines')) fetchLinesSel.value = p.get('lines');
+  return p.get('tab');
+}
+
 const MAX_LINES = 5000;
 loadSettings();
-loadHosts().then(() => { updateDownloadLink(); setupAuto(); });
+refreshPresetOptions();
+const urlTab = applyUrlOverrides();
+loadHosts().then(() => {
+  updateDownloadLink();
+  setupAuto();
+  if (urlTab && urlTab !== 'logs') activateTab(urlTab);
+  else updatePermalink();
+});
 </script>
 </body>
 </html>
