@@ -43,8 +43,13 @@ standard syslog.
 - Match highlighting
 - **Download** the currently viewed log file
 - **Search** across all hosts/files at once, not just the one currently open
-- **Stats** tab: per-host file count, total size on disk, and last-seen time
-- Your filter/sort preferences persist across reloads (stored in the browser)
+- **Stats** tab: per-host file count, total size on disk, and last-seen time, with a
+  **dead-host badge** for any host that's gone quiet longer than a configurable threshold
+- Light/dark **theme toggle** (defaults to your system preference)
+- **Saved filter presets** — save/apply/delete named include/exclude/regex/sort combos
+- **Permalinks** — the URL always reflects the current host/file/filters/tab, and a
+  "Copy link" button puts a shareable link on your clipboard
+- Your filter/sort/theme preferences persist across reloads (stored in the browser)
 
 ## Configuration
 
