@@ -7,10 +7,25 @@ services:
       - "514:514/udp"
       - "514:514/tcp"
       - "8082:8082"
+      # - "6514:6514/tcp"  # uncomment if TLS_CERT_FILE/TLS_KEY_FILE are set
     volumes:
       - ./logs:/var/log/syslogng
+      # - ./certs:/certs:ro  # uncomment if using TLS syslog input
     environment:
       - TZ=America/Toronto
+      # --- optional web UI auth (Basic Auth) ---
+      # - AUTH_USER=admin
+      # - AUTH_TOKEN=change-me
+      # --- optional retention (unbounded by default) ---
+      # - MAX_LOG_DAYS=30
+      # - MAX_TOTAL_SIZE_GB=20
+      # --- optional TLS syslog input (in addition to plain udp/tcp 514) ---
+      # - TLS_CERT_FILE=/certs/server.crt
+      # - TLS_KEY_FILE=/certs/server.key
+      # - TLS_CA_FILE=/certs/ca.crt
+      # - TLS_PORT=6514
+      # --- optional source allowlist (CIDR list) ---
+      # - ALLOWED_SOURCES=192.168.1.0/24,10.0.0.0/8
     logging:
       driver: json-file
       options:
