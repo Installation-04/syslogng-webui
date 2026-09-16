@@ -18,7 +18,7 @@ jobs:
         run: python3 -m py_compile app.py
 
       - name: Shell script syntax check
-        run: bash -n entrypoint.sh
+        run: bash -n entrypoint.sh && bash -n scripts/install.sh
 
       - name: YAML validation
         run: |

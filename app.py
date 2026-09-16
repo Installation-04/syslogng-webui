@@ -15,7 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 LOG_ROOT = os.environ.get("LOG_ROOT", "/var/log/syslogng")
-PORT = int(os.environ.get("PORT", "8082"))
+PORT = int(os.environ.get("PORT", "8333"))
 MAX_LINES = 2000
 SEARCH_LIMIT_DEFAULT = 500
 SEARCH_LIMIT_MAX = 2000
