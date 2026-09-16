@@ -10,12 +10,25 @@ files from a browser. Built for a Raspberry Pi, but runs anywhere Docker does
 
 ## Quick start
 
+**One-line install** (Linux, amd64 or arm64 — installs and starts the container):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Installation-04/syslogng-webui/main/scripts/install.sh | bash
+```
+
+It's configurable via environment variables (`PORT`, `LOG_DIR`, `TZ`, `IMAGE_TAG`,
+`CONTAINER_NAME`) — see the comments at the top of
+[`scripts/install.sh`](scripts/install.sh) for details. Re-run with `FORCE=1` to
+replace an existing install (your log data is untouched).
+
+**Or manually:**
+
 ```bash
 docker run -d \
   --name syslogng-webui \
   -p 514:514/udp \
   -p 514:514/tcp \
-  -p 8082:8082 \
+  -p 8333:8333 \
   -v ./logs:/var/log/syslogng \
   -e TZ=America/Toronto \
   ghcr.io/Installation-04/syslogng-webui:latest
@@ -27,7 +40,7 @@ Or with the included `docker-compose.yml`:
 docker compose up -d
 ```
 
-Then open `http://<host-ip>:8082`.
+Then open `http://<host-ip>:8333`.
 
 Point any device's remote syslog setting at this host's IP, port 514/UDP
 (or TCP) — network gear, Omada controllers, firewalls, anything that speaks
@@ -56,7 +69,7 @@ standard syslog.
 | Variable              | Default              | Description                                                        |
 |------------------------|----------------------|----------------------------------------------------------------------|
 | `LOG_ROOT`             | `/var/log/syslogng`  | Where log files are written and read from                          |
-| `PORT`                 | `8082`                | Web UI port                                                         |
+| `PORT`                 | `8333`                | Web UI port                                                         |
 | `TZ`                   | `UTC`                 | Container timezone (affects log timestamps)                        |
 | `AUTH_USER`            | `admin`               | Basic Auth username for the web UI (only enforced if `AUTH_TOKEN` set) |
 | `AUTH_TOKEN`           | *(unset)*             | If set, the web UI requires HTTP Basic Auth with this password      |

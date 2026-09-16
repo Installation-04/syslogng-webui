@@ -9,10 +9,10 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV LOG_ROOT=/var/log/syslogng
-ENV PORT=8082
+ENV PORT=8333
 ENV TZ=UTC
 
-EXPOSE 514/udp 514/tcp 6514/tcp 8082
+EXPOSE 514/udp 514/tcp 6514/tcp 8333
 VOLUME ["/var/log/syslogng"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
